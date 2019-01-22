@@ -28,13 +28,22 @@
  */
 
 #include <stdlib.h>
-
+#include <stdio.h>
+#include <unistd.h>
+#include <fstream>
+#define _REALLY_INCLUDE_SYS__SYSTEM_PROPERTIES_H_
+#include <sys/_system_properties.h>
+#include <android-base/logging.h>
+#include <android-base/properties.h>
 #include "vendor_init.h"
 #include "property_service.h"
 #include "log.h"
 #include "util.h"
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
+
+using android::base::GetProperty;
+using android::init::property_set;
 
 static void set_cmdline_properties()
 {
@@ -54,7 +63,7 @@ static void set_cmdline_properties()
     
     for (i = 0; i < ARRAY_SIZE(prop_map); i++) {
         memset(prop, 0, PROP_VALUE_MAX);
-        std::string temp_var=property_get(prop_map[i].src_prop);
+        std::string temp_var=GetProperty(prop_map[i].src_prop, "");
         if (temp_var=="") {
             property_set(prop_map[i].dest_prop, prop);
         } else {
@@ -98,15 +107,15 @@ void vendor_load_properties()
     std::string devicename;
     int rc;
 
-    platform  = property_get("ro.board.platform");
+    platform  = GetProperty("ro.board.platform", "");
     if (platform != ANDROID_TARGET)
         return;
 
     set_cmdline_properties();
 
-    radio = property_get("ro.boot.radio");
-    carrier = property_get("ro.boot.carrier");
-    bootdevice = property_get("ro.boot.device");
+    radio = GetProperty("ro.boot.radio", "");
+    carrier = GetProperty("ro.boot.carrier", "");
+    bootdevice = GetProperty("ro.boot.device", "");
     if (radio == "0x1") {
         /* xt1058 */
         property_set("ro.product.device", "ghost_retail");
@@ -164,6 +173,6 @@ void vendor_load_properties()
         gsm_properties();
     }
 
-    property_get("ro.product.device");
-    INFO("Found device: %s radio id: %s carrier: %s Setting build properties for %s device\n", bootdevice.c_str(), radio.c_str(), carrier.c_str(), devicename.c_str());
+    devicename = GetProperty("ro.product.device", "");
+    LOG(INFO) << "Found device: '" << bootdevice.c_str() << "', radio id: '" << radio.c_str() << "', carrier: '" << carrier.c_str() << "', Setting build properties for '" << devicename.c_str() << "' device\n";
 }
